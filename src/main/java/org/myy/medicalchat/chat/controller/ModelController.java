@@ -21,8 +21,10 @@ import java.util.stream.Collectors;
 public class ModelController {
 
     @GetMapping("list")
-    public ResponseEntity<List<ChatModel>> listByModel(){
-        List<ChatModel> list = Arrays.stream(ChatModel.values()).collect(Collectors.toList());
+    public ResponseEntity<List<String>> listByModel(){
+        List<String> list = Arrays.stream(ChatModel.values())
+                .map(ChatModel::getModelName)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(list);
     }
 }

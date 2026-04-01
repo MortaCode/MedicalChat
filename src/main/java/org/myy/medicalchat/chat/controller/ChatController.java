@@ -1,16 +1,14 @@
 package org.myy.medicalchat.chat.controller;
 
 import org.myy.medicalchat.chat.service.ModelSelectService;
+import org.myy.medicalchat.chat.vo.ChatMessageVo;
 import org.myy.medicalchat.chat.vo.ChatModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Validated
 @RestController
@@ -25,13 +23,12 @@ public class ChatController {
         this.modelSelectService = modelSelectService;
     }
 
-    @GetMapping("/ai")
-    public ResponseEntity<String> generation(@RequestParam String userInput,
-                                             @RequestParam(defaultValue = "deepseek") String modelName) {
-        ChatClient chatClient = modelSelectService.selectModel(ChatModel.valueOf(modelName));
-        log.info("开始执行，大语言模型：{}", chatClient.getClass().getSimpleName());
+    @PostMapping("/ai")
+    public ResponseEntity<String> generation(@RequestBody ChatMessageVo messageVo) {
+        ChatClient chatClient = modelSelectService.selectModel(ChatModel.fromString(messageVo.getModelName()));
+        log.info("开始执行，大语言模型：{}", messageVo.getModelName());
         String result = chatClient.prompt()
-                .user(userInput)
+                .user(messageVo.getUserInput())
                 .call()
                 .content();
         log.info("执行结束，输出内容：{}", result);
