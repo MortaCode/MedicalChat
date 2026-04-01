@@ -1,28 +1,45 @@
-CREATE TABLE T_TZGL_LTJLB (
-                              id VARCHAR2(32) NOT NULL,
-                              role VARCHAR2(20) NOT NULL,
-                              content CLOB NOT NULL,
-                              del_flag NUMBER(1) DEFAULT 0 NOT NULL,
-                              create_by VARCHAR2(50),
-                              update_by VARCHAR2(50),
-                              create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                              update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                              CONSTRAINT PK_T_TZGL_LTJLB PRIMARY KEY (id)
-);
+-- 会话表
+CREATE TABLE `session` (
+                                        `id` VARCHAR(32) NOT NULL COMMENT '会话ID，会话表主键',
+                                        `user_id` VARCHAR(64) NOT NULL COMMENT '用户ID',
+                                        `title` VARCHAR(200) DEFAULT NULL COMMENT '会话标题',
+                                        `model_name` VARCHAR(50) NOT NULL COMMENT '使用的模型名称',
+                                        `message_count` INT DEFAULT 0 COMMENT '消息总数',
+                                        `del_flag` TINYINT DEFAULT 0 COMMENT '删除状态：0-未删除，1-删除',
+                                        `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                        `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                        PRIMARY KEY (`id`),
+                                        KEY `idx_user_id` (`user_id`),
+                                        KEY `idx_update_time` (`update_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='对话会话表';
 
-COMMENT ON TABLE T_TZGL_LTJLB IS '会话表';
-COMMENT ON COLUMN T_TZGL_LTJLB.id IS '会话ID，主键';
-COMMENT ON COLUMN T_TZGL_LTJLB.role IS '角色：user/assistant/system';
-COMMENT ON COLUMN T_TZGL_LTJLB.content IS '会话内容';
-COMMENT ON COLUMN T_TZGL_LTJLB.del_flag IS '删除标志：0-未删除，1-已删除';
-COMMENT ON COLUMN T_TZGL_LTJLB.create_by IS '创建人';
-COMMENT ON COLUMN T_TZGL_LTJLB.update_by IS '更新人';
-COMMENT ON COLUMN T_TZGL_LTJLB.create_time IS '创建时间';
-COMMENT ON COLUMN T_TZGL_LTJLB.update_time IS '更新时间';
+-- 对话消息表
+CREATE TABLE `message` (
+                                        `id` VARCHAR(32) NOT NULL COMMENT '消息ID，消息表主键',
+                                        `session_id` VARCHAR(32) NOT NULL COMMENT '会话ID',
+                                        `role` VARCHAR(20) NOT NULL COMMENT '角色：user/assistant/system',
+                                        `content` TEXT NOT NULL COMMENT '消息内容',
+                                        `message_type` VARCHAR(20) DEFAULT 'text' COMMENT '消息类型：text/image/file',
+                                        `token_count` INT DEFAULT 0 COMMENT 'token数量',
+                                        `del_flag` TINYINT DEFAULT 0 COMMENT '删除状态：0-未删除，1-删除',
+                                        `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                        `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                        PRIMARY KEY (`id`),
+                                        KEY `idx_session_id` (`session_id`),
+                                        KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='对话消息表';
 
-CREATE OR REPLACE TRIGGER TRG_T_TZGL_LTJLB_UPDATE
-BEFORE UPDATE ON T_TZGL_LTJLB
-FOR EACH ROW
-BEGIN
-    :NEW.update_time := CURRENT_TIMESTAMP;
-END;
+-- 会话记忆快照表（用于快速恢复）
+CREATE TABLE `snapshot` (
+                                         `id` VARCHAR(32) NOT NULL COMMENT '快照ID，快照表主键',
+                                         `session_id` VARCHAR(32) NOT NULL COMMENT '会话ID',
+                                         `snapshot_data` LONGBLOB NOT NULL COMMENT '序列化的记忆数据',
+                                         `message_count` INT NOT NULL COMMENT '快照时的消息数量',
+                                         `checksum` VARCHAR(64) DEFAULT NULL COMMENT '数据校验和',
+                                         `del_flag` TINYINT DEFAULT 0 COMMENT '删除状态：0-未删除，1-删除',
+                                         `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                         `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                         PRIMARY KEY (`id`),
+                                         KEY `idx_session_id` (`session_id`),
+                                         KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会话记忆快照表';
