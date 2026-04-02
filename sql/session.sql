@@ -1,3 +1,11 @@
+CREATE DATABASE IF NOT EXISTS chat
+DEFAULT CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+-- 使用数据库
+USE chat;
+
+
 -- 会话表
 CREATE TABLE `session` (
                                         `id` VARCHAR(32) NOT NULL COMMENT '会话ID，会话表主键',
