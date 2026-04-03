@@ -108,17 +108,10 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
      */
     private String extractSessionId(ChatClientRequest request) {
         // 尝试从userParams获取sessionId
-//        if (request.userParams() != null && request.userParams().containsKey("sessionId")) {
-//            Object sessionId = request.userParams().get("sessionId");
-//            return sessionId != null ? sessionId.toString() : null;
-//        }
-//
-//        // 尝试从请求头或上下文中获取
-//        if (request.userParams() != null && request.userParams().containsKey("conversationId")) {
-//            Object conversationId = request.userParams().get("conversationId");
-//            return conversationId != null ? conversationId.toString() : null;
-//        }
-
+        if (request.context() != null && request.context().containsKey("sessionId")) {
+            Object sessionId = request.context().get("sessionId");
+            return sessionId != null ? sessionId.toString() : null;
+        }
         return null;
     }
 
@@ -173,10 +166,7 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
 
         // 创建新的ChatClientRequest
         return ChatClientRequest.builder()
-                .userParams(request.prompt().userParams())
                 .prompt(enhancedPrompt)
-                .functionCallbacks(request.functionCallbacks())
-                .functionCallbacks(request.functionCallbacks())
                 .build();
     }
 
