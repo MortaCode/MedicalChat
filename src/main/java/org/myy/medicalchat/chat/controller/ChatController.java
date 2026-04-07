@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @Validated
 @RestController
 @RequestMapping("chat")
@@ -27,11 +29,19 @@ public class ChatController {
     public ResponseEntity<String> generation(@RequestBody ChatMessageVo messageVo) {
         ChatClient chatClient = modelSelectService.selectModel(ChatModel.fromString(messageVo.getModelName()));
         log.info("开始执行，大语言模型：{}", messageVo.getModelName());
-        String result = chatClient.prompt()
+        String result = chatClient
+                .prompt()
                 .user(messageVo.getUserInput())
+                .advisors(advisorSpec -> {
+                    advisorSpec.params(Map.ofEntries(
+                            Map.entry("sessionId", messageVo.getSessionId()),
+                            Map.entry("modelName", messageVo.getModelName())
+                    ));
+                })
                 .call()
                 .content();
         log.info("执行结束，输出内容：{}", result);
         return ResponseEntity.ok(result);
     }
+
 }

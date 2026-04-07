@@ -1,5 +1,6 @@
 package org.myy.medicalchat.chat.service;
 
+import cn.hutool.core.util.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -10,11 +11,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -42,11 +43,12 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
     public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
         log.debug("顾问开启");
 
-        // 1. 获取会话ID
+        // 1. 获取或生成会话ID
         String sessionId = extractSessionId(chatClientRequest);
-        if (sessionId == null) {
-            log.warn("未找到会话ID，跳过历史消息加载");
-            return callAdvisorChain.nextCall(chatClientRequest);
+        if (!StringUtils.hasText(sessionId)) {
+            sessionId = IdUtil.objectId();  // 生成新会话ID
+            chatClientRequest = setSessionId(chatClientRequest, sessionId);  // 设置到请求中
+            log.debug("首次会话，生成新会话ID: {}", sessionId);
         }
 
         // 2. 加载历史消息
@@ -74,9 +76,10 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
 
         // 1. 获取会话ID
         String sessionId = extractSessionId(chatClientRequest);
-        if (sessionId == null) {
-            log.warn("未找到会话ID，跳过历史消息加载");
-            return streamAdvisorChain.nextStream(chatClientRequest);
+        if (!StringUtils.hasText(sessionId)) {
+            sessionId = IdUtil.objectId();  // 生成新会话ID
+            chatClientRequest = setSessionId(chatClientRequest, sessionId);  // 设置到请求中
+            log.debug("首次会话，生成新会话ID: {}", sessionId);
         }
 
         // 2. 加载历史消息
@@ -116,32 +119,28 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
     }
 
     /**
+     * 设置会话ID
+     * @param chatClientRequest
+     * @param sessionId
+     * @return
+     */
+    private ChatClientRequest setSessionId(ChatClientRequest chatClientRequest, String sessionId) {
+        chatClientRequest.context().put("sessionId", sessionId);
+        return chatClientRequest;
+    }
+
+    /**
      * 加载历史消息
      */
     private List<Message> loadHistoryMessages(String sessionId) {
         try {
             //List<Message> historyEntities = chatMemoryService.getMemory(sessionId, contextWindowSize);
             List<Message> historyEntities = chatMemoryService.getMemory(sessionId);
-
-            return historyEntities.stream()
-                    .map(this::convertToMessage)
-                    .collect(Collectors.toList());
+            return historyEntities;
         } catch (Exception e) {
             log.error("会话{}获取历史消息异常", sessionId, e);
             return new ArrayList<>();
         }
-    }
-
-    /**
-     * 将历史记录实体转换为Message对象
-     */
-    private Message convertToMessage(Message entity) {
-        if ("user".equals(entity.getMessageType())) {
-            return new UserMessage(entity.getText());
-        } else if ("assistant".equals(entity.getMessageType())) {
-            return new AssistantMessage(entity.getText());
-        }
-        throw new IllegalArgumentException("未知角色: " + entity.getMessageType());
     }
 
     /**
@@ -183,8 +182,11 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
 
             // 保存到历史
             if (userMessage != null && assistantMessage != null) {
-//                chatMemoryService.saveMessage(sessionId, "user", userMessage);
-//                chatMemoryService.saveMessage(sessionId, "assistant", assistantMessage);
+                // 创建用户消息和助手消息
+                List<Message> messages = new ArrayList<>();
+                messages.add(new UserMessage(userMessage));
+                messages.add(new AssistantMessage(assistantMessage.toString()));
+                chatMemoryService.saveMemory(sessionId, messages);
                 log.debug("保存聊天信息，会话{}", sessionId);
             }
         } catch (Exception e) {
@@ -214,8 +216,11 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
                     // 流式响应完成后保存完整对话
                     try {
                         if (userMessage != null && fullResponse.length() > 0) {
-//                            chatMemoryService.saveMessage(sessionId, "user", userMessage);
-//                            chatMemoryService.saveMessage(sessionId, "assistant", fullResponse.toString());
+                            // 创建用户消息和助手消息
+                            List<Message> messages = new ArrayList<>();
+                            messages.add(new UserMessage(userMessage));
+                            messages.add(new AssistantMessage(fullResponse.toString()));
+                            chatMemoryService.saveMemory(sessionId, messages);
                             log.debug("保存聊天信息，会话{}", sessionId);
                         }
                     } catch (Exception e) {
@@ -223,7 +228,6 @@ public class ChatMemoryAdvisor implements CallAdvisor, StreamAdvisor {
                     }
                 });
     }
-
     /**
      * 从请求中提取用户消息
      */

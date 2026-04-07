@@ -9,10 +9,13 @@ import org.myy.medicalchat.chat.mapper.ChatMessageMapper;
 import org.myy.medicalchat.chat.mapper.ChatSessionMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -181,6 +184,7 @@ public class ChatMemoryService {
             session = new ChatSession();
             session.setId(sessionId);
             session.setUserId(getUserIdFromSession(sessionId));
+            session.setModelName("modelname");//ToDo
             session.setDelFlag(0);
             session.setMessageCount(messages.size());
             sessionMapper.insert(session);
@@ -219,9 +223,12 @@ public class ChatMemoryService {
      * 转换数据库实体为AI Message
      */
     private Message convertToAiMessage(ChatMessage entity) {
-        // 这里需要根据实际的Message实现类来创建
-        // 简化实现，实际需要根据角色创建对应的Message
-        return new org.springframework.ai.chat.messages.UserMessage(entity.getContent());
+        if ("user".equalsIgnoreCase(entity.getRole())) {
+            return new UserMessage(entity.getContent());
+        } else if ("assistant".equals(entity.getRole())) {
+            return new AssistantMessage(entity.getContent());
+        }
+        throw new IllegalArgumentException("未知角色: " + entity.getMessageType());
     }
 
     /**
@@ -230,6 +237,22 @@ public class ChatMemoryService {
     private String getUserIdFromSession(String sessionId) {
         // 目前没有用户信息，可以根据sessionId解析出userId，或者从上下文获取
         return "default_user";
+    }
+
+
+    /**
+     * 清除会话缓存
+     */
+    public void clearCache(String sessionId) {
+        if (!StringUtils.hasText(sessionId)){return;}
+        // 清除本地缓存
+        localCache.remove(sessionId);
+
+        // 清除Redis
+        String key = REDIS_KEY_PREFIX + sessionId;
+        redisTemplate.delete(key);
+
+        log.info("清除会话缓存成功, sessionId: {}", sessionId);
     }
 
     /**

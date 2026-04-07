@@ -2,6 +2,8 @@ package org.myy.medicalchat.common.config;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import jakarta.annotation.Resource;
+import org.myy.medicalchat.chat.service.ChatMemoryAdvisor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -12,6 +14,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ChatConfig {
 
+    @Resource
+    private ChatMemoryAdvisor chatMemoryAdvisor;
+
 
 
     @Bean
@@ -19,6 +24,7 @@ public class ChatConfig {
     public ChatClient deepseekChatClient(OpenAiChatModel chatModel) {
         return ChatClient.builder(chatModel)
                 .defaultOptions(OpenAiChatOptions.builder().temperature(0.7).build())
+                .defaultAdvisors(chatMemoryAdvisor)
                 .defaultSystem("""
                         角色：资深全科医生
                         背景：用户正在通过线上问诊平台咨询病情
@@ -47,6 +53,7 @@ public class ChatConfig {
                 .defaultOptions(DashScopeChatOptions.builder()
                         .temperature(0.5)
                         .build())
+                .defaultAdvisors(chatMemoryAdvisor)
                 .defaultSystem("""
                         角色：资深全科医生
                         背景：用户正在通过线上问诊平台咨询病情
