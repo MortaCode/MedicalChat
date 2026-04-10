@@ -199,8 +199,8 @@ public class ChatMemoryService {
                 .collect(Collectors.toList());
 
         // 先删除旧消息，再插入新消息
-        messageMapper.delete(new LambdaQueryWrapper<ChatMessage>()
-                .eq(ChatMessage::getSessionId, sessionId));
+//        messageMapper.delete(new LambdaQueryWrapper<ChatMessage>()
+//                .eq(ChatMessage::getSessionId, sessionId));
         if (!messageEntities.isEmpty()) {
             messageService.saveBatch(messageEntities);
         }

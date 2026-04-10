@@ -1,7 +1,8 @@
-package org.myy.medicalchat.chat.service;
+package org.myy.medicalchat.chat.advisor;
 
 import cn.hutool.core.util.IdUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.myy.medicalchat.chat.service.ChatMemoryService;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.*;
