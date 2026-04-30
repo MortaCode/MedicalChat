@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.*;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -85,14 +86,13 @@ public class RAGAdvisor implements CallAdvisor, StreamAdvisor {
 
         // 获取原始消息
         Prompt originalPrompt = request.prompt();
-        List<org.springframework.ai.chat.messages.Message> originalMessages = originalPrompt.getInstructions();
+        List<Message> originalMessages = originalPrompt.getInstructions();
 
         // 构建新消息列表：RAG SystemMessage + 原始消息（移除原有的SystemMessage）
-        List<org.springframework.ai.chat.messages.Message> newMessages = new ArrayList<>();
+        List<Message> newMessages = new ArrayList<>();
         newMessages.add(ragSystemMessage);
 
-        for (org.springframework.ai.chat.messages.Message msg : originalMessages) {
-            // 跳过原有的SystemMessage，避免冲突
+        for (Message msg : originalMessages) {
             if (!(msg instanceof SystemMessage)) {
                 newMessages.add(msg);
             }
@@ -107,19 +107,26 @@ public class RAGAdvisor implements CallAdvisor, StreamAdvisor {
                 .build();
     }
 
+    /**
+     * ChatClientRequest  -->  prompt  -->  getInstructions()/List<Message>
+     * UserMessage{content='" + var10000 + "', metadata=" + String.valueOf(this.metadata) + ", messageType=" + String.valueOf(this.messageType) + "}
+     * messageType -->  USER、ASSISTANT、SYSTEM、TOOL  public static MessageType fromValue(String value) {}
+     * @param request
+     * @return
+     */
     private String extractUserQuery(ChatClientRequest request) {
         if (request.prompt() == null) {
             return null;
         }
 
-        List<org.springframework.ai.chat.messages.Message> messages = request.prompt().getInstructions();
+        List<Message> messages = request.prompt().getInstructions();
         if (messages == null || messages.isEmpty()) {
             return null;
         }
 
         // 获取最后一条用户消息
         for (int i = messages.size() - 1; i >= 0; i--) {
-            org.springframework.ai.chat.messages.Message msg = messages.get(i);
+            Message msg = messages.get(i);
             if (msg instanceof UserMessage) {
                 return msg.getText();
             }

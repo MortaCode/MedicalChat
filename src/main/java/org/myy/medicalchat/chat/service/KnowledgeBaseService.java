@@ -19,11 +19,13 @@ public class KnowledgeBaseService {
     // 检索相关文档
     public String retrieveRelevantContext(String query, int topK) {
         try {
+            //构建请求
             SearchRequest searchRequest = SearchRequest.builder()
                     .query(query)
                     .topK(topK)
                     .build();
 
+            //执行相似度检索请求
             List<Document> documents = vectorStore.similaritySearch(searchRequest);
 
             if (documents.isEmpty()) {
