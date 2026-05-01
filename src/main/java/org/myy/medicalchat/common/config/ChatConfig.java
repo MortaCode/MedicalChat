@@ -24,7 +24,7 @@ public class ChatConfig {
 
 
     @Bean
-    @Qualifier("deepseekChatClient")
+    //ualifier("deepseekChatClient")
     public ChatClient deepseekChatClient(OpenAiChatModel chatModel) {
         return ChatClient.builder(chatModel)
                 .defaultOptions(OpenAiChatOptions.builder().temperature(0.7).build())
@@ -52,7 +52,7 @@ public class ChatConfig {
     }
 
     @Bean
-    @Qualifier("qwenChatClient")
+   //Qualifier("qwenChatClient")
     public ChatClient qwenChatClient(DashScopeChatModel chatModel) {
         return ChatClient.builder(chatModel)
                 .defaultOptions(DashScopeChatOptions.builder()

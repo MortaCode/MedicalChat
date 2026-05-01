@@ -15,6 +15,8 @@ public class ModelSelectService {
         this.deepSeekClient = deepSeekClient;
         this.qwenChatClient = qwenChatClient;
     }
+
+    //利用Fall-through
     public ChatClient selectModel(ChatModel chatModel) {
         switch (chatModel) {
             case QWEN:

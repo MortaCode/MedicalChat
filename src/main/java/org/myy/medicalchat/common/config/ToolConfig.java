@@ -1,6 +1,7 @@
 package org.myy.medicalchat.common.config;
 
 import org.myy.medicalchat.chat.tools.ResourceDownLoadTool;
+import org.myy.medicalchat.chat.tools.TerminateTool;
 import org.myy.medicalchat.chat.tools.WebScrapingTool;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbacks;
@@ -19,10 +20,11 @@ public class ToolConfig {
 //                resourceDownLoadTool,
 //                webScrapingTool
 //        );
-        WebScrapingTool webScrapingTool = new WebScrapingTool();
+//        WebScrapingTool webScrapingTool = new WebScrapingTool();
+        TerminateTool terminateTool = new TerminateTool();
 
         return ToolCallbacks.from(
-                webScrapingTool
+                terminateTool
         );
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class WebScrapingTool {
 
-    @Tool(description = "抓取该网址的内容信息")
+    @Tool(name = "webScraping", description = "抓取该网址的内容信息")
     public String webScraping(@ToolParam(description = "正在被抓取网页内容的网址URL") String url){
         try {
             Document dc = Jsoup.connect(url).get();
